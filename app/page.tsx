@@ -88,10 +88,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("popular");
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <Header />
-
+    <>
       {/* 메인 컨텐츠 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 타이틀 */}
@@ -130,13 +127,23 @@ export default function Home() {
 
         {/* 인기 검색어 */}
         <div className="flex justify-center gap-2 mb-8 flex-wrap">
-          {["인기 검색어", "에어컨", "에어컨청소", "노트북", "원룸", "헬스", "이사짐 센터", "근처 맛집", "투룸", "농어친구", "배곧동"].map((tag, index) => (
+          {[
+            "인기 검색어",
+            "에어컨",
+            "에어컨청소",
+            "노트북",
+            "원룸",
+            "헬스",
+            "이사짐 센터",
+            "근처 맛집",
+            "투룸",
+            "농어친구",
+            "배곧동",
+          ].map((tag, index) => (
             <span
               key={index}
               className={`px-3 py-1 text-sm rounded-full cursor-pointer transition-colors ${
-                index === 0
-                  ? "bg-gray-800 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                index === 0 ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               {tag}
@@ -171,26 +178,18 @@ export default function Home() {
             >
               {/* 상품 이미지 */}
               <div className="relative aspect-square bg-gray-200">
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
+                <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
                 {/* 좋아요 버튼 */}
                 <button className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
                   <Heart className="w-4 h-4 text-gray-600" />
                 </button>
               </div>
-              
+
               {/* 상품 정보 */}
               <div className="p-3">
-                <h3 className="font-medium text-sm text-gray-900 mb-1 line-clamp-2">
-                  {product.title}
-                </h3>
-                <p className="font-bold text-base text-gray-900 mb-2">
-                  {product.price}
-                </p>
-                
+                <h3 className="font-medium text-sm text-gray-900 mb-1 line-clamp-2">{product.title}</h3>
+                <p className="font-bold text-base text-gray-900 mb-2">{product.price}</p>
+
                 {/* 판매자 정보 및 좋아요 */}
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-1">
@@ -215,6 +214,6 @@ export default function Home() {
           </button>
         </div>
       </main>
-    </div>
+    </>
   );
 }

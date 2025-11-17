@@ -1,5 +1,8 @@
-import { supabase } from "@/lib/supabaseConfig";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+
+// 클라이언트 사이드에서만 사용되는 Supabase 클라이언트
+const supabase = createClient();
 
 // 구글 로그인
 export const signInWithGoogle = async () => {

@@ -2,19 +2,43 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, LogOut, ChevronDown } from "lucide-react";
-import { useAuthStore } from "@/store/useAuthStore";
+import { User as UserIcon, LogOut, ChevronDown } from "lucide-react";
+import { signOut } from "@/lib/api/auth/authApi";
+import type { User } from "@supabase/supabase-js";
 
-export default function Header() {
+interface UserData {
+  id: string;
+  email: string | null;
+  display_name: string | null;
+  photo_url: string | null;
+  provider: "google" | "kakao";
+  wishlist: string[];
+  recent_views: string[];
+  search_history: string[];
+  posts_count: number;
+  sales_count: number;
+  purchase_count: number;
+  is_premium: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string;
+}
+
+interface HeaderProps {
+  user: User | null;
+  userData: UserData | null;
+}
+
+export default function Header({ user, userData }: HeaderProps) {
   const router = useRouter();
-  const { user, userData, logout } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       setShowUserMenu(false);
+      router.refresh(); // 페이지 새로고침하여 서버 컴포넌트 다시 렌더링
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -54,7 +78,7 @@ export default function Header() {
                   <img src={userData.photo_url} alt="Profile" className="w-8 h-8 rounded-full" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
+                    <UserIcon className="w-5 h-5 text-white" />
                   </div>
                 )}
                 <span className="text-sm font-medium hidden sm:block">{userData?.display_name || "사용자"}</span>
@@ -70,7 +94,7 @@ export default function Header() {
                     }}
                     className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
                   >
-                    <User className="w-4 h-4" />
+                    <UserIcon className="w-4 h-4" />
                     마이 페이지
                   </button>
                   <button
