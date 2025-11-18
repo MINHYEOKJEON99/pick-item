@@ -6,7 +6,10 @@
       "Bash(npx kill-port:*)",
       "Bash(npm run build:*)",
       "Bash(mkdir:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []
