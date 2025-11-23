@@ -1,25 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MapPin, Heart, ChevronDown } from "lucide-react";
-import Header from "@/components/layout/Header";
-
-// 카테고리 데이터
-const categories = [
-  { id: "popular", name: "인기매물", emoji: "🔥" },
-  { id: "clothes", name: "의류", emoji: "👕" },
-  { id: "electronics", name: "전자제품", emoji: "📱" },
-  { id: "furniture", name: "가구", emoji: "🪑" },
-  { id: "books", name: "도서", emoji: "📚" },
-  { id: "sports", name: "스포츠", emoji: "⚽" },
-  { id: "beauty", name: "뷰티", emoji: "💄" },
-  { id: "toys", name: "완구", emoji: "🧸" },
-  { id: "food", name: "식품", emoji: "🍔" },
-  { id: "pets", name: "반려동물", emoji: "🐕" },
-];
+import { MapPin } from "lucide-react";
+import SearchBar from "@/components/products/SearchBar";
+import ProductCard, { Product } from "@/components/products/ProductCard";
+import { categories } from "@/components/products/CategoryFilter";
+import Link from "next/link";
 
 // 임시 상품 데이터
-const products = [
+const products: Product[] = [
   {
     id: 1,
     title: "아이폰 14 프로 맥스 256GB",
@@ -83,9 +72,22 @@ const products = [
 ];
 
 export default function Home() {
-  const [selectedLocation, setSelectedLocation] = useState("배곧동");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("popular");
+
+  const handleSearch = (query: string) => {
+    console.log("검색어:", query);
+    // TODO: 검색 로직 구현
+  };
+
+  const handleProductClick = (product: Product) => {
+    console.log("상품 클릭:", product);
+    // TODO: 상품 상세 페이지로 이동
+  };
+
+  const handleLike = (productId: number) => {
+    console.log("좋아요:", productId);
+    // TODO: 좋아요 로직 구현
+  };
 
   return (
     <>
@@ -99,62 +101,13 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* 검색창 섹션 */}
-        <div className="flex justify-center mb-8">
-          <div className="flex gap-2 w-full max-w-2xl">
-            {/* 위치 선택 드롭다운 */}
-            <button className="flex items-center gap-2 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
-              <MapPin className="w-4 h-4" />
-              <span>{selectedLocation}</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-
-            {/* 검색 입력창 */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="검색어를 입력해주세요"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Search className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 인기 검색어 */}
-        <div className="flex justify-center gap-2 mb-8 flex-wrap">
-          {[
-            "인기 검색어",
-            "에어컨",
-            "에어컨청소",
-            "노트북",
-            "원룸",
-            "헬스",
-            "이사짐 센터",
-            "근처 맛집",
-            "투룸",
-            "농어친구",
-            "배곧동",
-          ].map((tag, index) => (
-            <span
-              key={index}
-              className={`px-3 py-1 text-sm rounded-full cursor-pointer transition-colors ${
-                index === 0 ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        {/* 검색창 컴포넌트 */}
+        <SearchBar onSearch={handleSearch} />
 
         {/* 카테고리 섹션 */}
         <div className="mb-8">
           <div className="grid grid-cols-5 sm:grid-cols-10 gap-4">
-            {categories.map((category) => (
+            {categories.slice(1).map((category) => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
@@ -172,46 +125,18 @@ export default function Home() {
         {/* 상품 카드 그리드 */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {products.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-            >
-              {/* 상품 이미지 */}
-              <div className="relative aspect-square bg-gray-200">
-                <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
-                {/* 좋아요 버튼 */}
-                <button className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                  <Heart className="w-4 h-4 text-gray-600" />
-                </button>
-              </div>
-
-              {/* 상품 정보 */}
-              <div className="p-3">
-                <h3 className="font-medium text-sm text-gray-900 mb-1 line-clamp-2">{product.title}</h3>
-                <p className="font-bold text-base text-gray-900 mb-2">{product.price}</p>
-
-                {/* 판매자 정보 및 좋아요 */}
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <span>{product.location}</span>
-                    <span>•</span>
-                    <span>{product.timeAgo}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Heart className="w-3 h-3 fill-current" />
-                    <span>{product.likes}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ProductCard key={product.id} product={product} onClick={handleProductClick} onLike={handleLike} />
           ))}
         </div>
 
         {/* 더보기 버튼 */}
         <div className="flex justify-center mt-8">
-          <button className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-colors">
+          <Link
+            href="/products"
+            className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-colors"
+          >
             더 많은 상품 보기
-          </button>
+          </Link>
         </div>
       </main>
     </>

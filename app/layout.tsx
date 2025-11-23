@@ -27,11 +27,7 @@ export default async function RootLayout({
   // 사용자 데이터 가져오기 (있을 경우)
   let userData = null;
   if (user) {
-    const { data } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const { data } = await supabase.from("users").select("*").eq("id", user.id).single();
     userData = data;
   }
 
@@ -45,7 +41,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/favicon.svg" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-white">
           {/* 헤더 - 서버에서 가져온 사용자 정보 전달 */}
           <Header user={user} userData={userData} />
           {children}
