@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
 
 // 클라이언트 사이드에서만 사용되는 Supabase 클라이언트
 const supabase = createClient();
@@ -62,7 +61,7 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
 export const getUserData = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .from("users")
+      .from("profiles")
       .select("*")
       .eq("id", userId)
       .single();
@@ -83,25 +82,23 @@ export const getUserData = async (userId: string) => {
 };
 
 // 사용자 데이터 생성 또는 업데이트
+// 참고: 신규 사용자는 Supabase Trigger로 자동 생성되므로 이 함수는 업데이트용으로만 사용
 export const upsertUserData = async (user: User) => {
   try {
     const { data: existingUser } = await supabase
-      .from("users")
+      .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
 
     if (!existingUser) {
-      // 신규 사용자 생성
-      const { error } = await supabase.from("users").insert({
+      // 신규 사용자 생성 (Trigger가 실패한 경우의 fallback)
+      const { error } = await supabase.from("profiles").insert({
         id: user.id,
         email: user.email,
         display_name: user.user_metadata?.full_name || user.email?.split("@")[0],
         photo_url: user.user_metadata?.avatar_url,
         provider: "google",
-        wishlist: [],
-        recent_views: [],
-        search_history: [],
         posts_count: 0,
         sales_count: 0,
         purchase_count: 0,
@@ -113,11 +110,10 @@ export const upsertUserData = async (user: User) => {
 
       if (error) throw error;
     } else {
-      // 기존 사용자 업데이트
+      // 기존 사용자 업데이트 (last_login_at은 Trigger로 자동 업데이트)
       const { error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({
-          last_login_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);

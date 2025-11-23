@@ -3,10 +3,10 @@
 import { useState } from "react";
 import SearchBar from "@/components/products/SearchBar";
 import CategoryFilter from "@/components/products/CategoryFilter";
-import ProductCard, { Product } from "@/components/products/ProductCard";
+import ProductCard, { MockProduct } from "@/components/products/ProductCard";
 
 // 임시 상품 데이터
-const mockProducts: Product[] = [
+const mockProducts: MockProduct[] = [
   {
     id: 1,
     title: "아이폰 14 프로 맥스 256GB",
@@ -145,7 +145,7 @@ export default function ProductsPage() {
     // TODO: 카테고리별 필터링 로직 구현
   };
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: MockProduct) => {
     console.log("상품 클릭:", product);
     // TODO: 상품 상세 페이지로 이동
   };

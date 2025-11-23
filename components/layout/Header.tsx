@@ -4,29 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, LogOut, ChevronDown } from "lucide-react";
 import { signOut } from "@/lib/api/auth/authApi";
-import type { User } from "@supabase/supabase-js";
-
-interface UserData {
-  id: string;
-  email: string | null;
-  display_name: string | null;
-  photo_url: string | null;
-  provider: "google" | "kakao";
-  wishlist: string[];
-  recent_views: string[];
-  search_history: string[];
-  posts_count: number;
-  sales_count: number;
-  purchase_count: number;
-  is_premium: boolean;
-  created_at: string;
-  updated_at: string;
-  last_login_at: string;
-}
 
 interface HeaderProps {
   user: User | null;
-  userData: UserData | null;
+  userData: Profile | null;
 }
 
 export default function Header({ user, userData }: HeaderProps) {

@@ -27,7 +27,7 @@ export default async function RootLayout({
   // 사용자 데이터 가져오기 (있을 경우)
   let userData = null;
   if (user) {
-    const { data } = await supabase.from("users").select("*").eq("id", user.id).single();
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
     userData = data;
   }
 

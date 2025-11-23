@@ -3,7 +3,8 @@
 import { Heart } from "lucide-react";
 import { useState } from "react";
 
-export interface Product {
+// 임시 상품 타입 (실제 DB 연동 시 global Product 타입 사용 예정)
+export interface MockProduct {
   id: number;
   title: string;
   price: string;
@@ -15,8 +16,8 @@ export interface Product {
 }
 
 interface ProductCardProps {
-  product: Product;
-  onClick?: (product: Product) => void;
+  product: MockProduct;
+  onClick?: (product: MockProduct) => void;
   onLike?: (productId: number) => void;
 }
 

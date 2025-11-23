@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import SearchBar from "@/components/products/SearchBar";
-import ProductCard, { Product } from "@/components/products/ProductCard";
+import ProductCard, { MockProduct } from "@/components/products/ProductCard";
 import { categories } from "@/components/products/CategoryFilter";
 import Link from "next/link";
 
 // 임시 상품 데이터
-const products: Product[] = [
+const products: MockProduct[] = [
   {
     id: 1,
     title: "아이폰 14 프로 맥스 256GB",
@@ -79,7 +79,7 @@ export default function Home() {
     // TODO: 검색 로직 구현
   };
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: MockProduct) => {
     console.log("상품 클릭:", product);
     // TODO: 상품 상세 페이지로 이동
   };
