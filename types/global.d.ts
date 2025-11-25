@@ -96,12 +96,12 @@ declare global {
 
   // 상품 등록 폼
   type ProductFormData = {
+    userId: string;
     title: string;
     description: string;
     price: number;
-    category_id: string;
+    categoryId: string;
     location: string;
-    images: File[];
   };
 
   // 프로필 수정 폼

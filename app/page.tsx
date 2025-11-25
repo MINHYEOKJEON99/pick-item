@@ -1,92 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
 import SearchBar from "@/components/products/SearchBar";
 import ProductCard, { MockProduct } from "@/components/products/ProductCard";
 import { categories } from "@/components/products/CategoryFilter";
+import { getProducts } from "@/lib/api/products/productsApi";
 import Link from "next/link";
 
-// 임시 상품 데이터
-const products: MockProduct[] = [
-  {
-    id: 1,
-    title: "아이폰 14 프로 맥스 256GB",
-    price: "1,200,000원",
-    image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=400&fit=crop",
-    seller: "김민수",
-    likes: 23,
-    location: "강남구",
-    timeAgo: "1시간 전",
-  },
-  {
-    id: 2,
-    title: "나이키 에어맥스 270 (275mm)",
-    price: "85,000원",
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop",
-    seller: "이서연",
-    likes: 15,
-    location: "서초구",
-    timeAgo: "2시간 전",
-  },
-  {
-    id: 3,
-    title: "다이슨 V15 무선청소기",
-    price: "450,000원",
-    image: "https://images.unsplash.com/photo-1558317374-067fb5f30001?w=400&h=400&fit=crop",
-    seller: "박지훈",
-    likes: 42,
-    location: "송파구",
-    timeAgo: "3시간 전",
-  },
-  {
-    id: 4,
-    title: "스타벅스 텀블러 새상품",
-    price: "25,000원",
-    image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400&h=400&fit=crop",
-    seller: "최유진",
-    likes: 8,
-    location: "마포구",
-    timeAgo: "5시간 전",
-  },
-  {
-    id: 5,
-    title: "아이패드 프로 11인치 3세대",
-    price: "900,000원",
-    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
-    seller: "정호석",
-    likes: 31,
-    location: "강남구",
-    timeAgo: "1일 전",
-  },
-  {
-    id: 6,
-    title: "르쿠르제 냄비 세트",
-    price: "180,000원",
-    image: "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=400&h=400&fit=crop",
-    seller: "김태연",
-    likes: 19,
-    location: "용산구",
-    timeAgo: "1일 전",
-  },
-];
-
 export default function Home() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("popular");
+  const [products, setProducts] = useState<ProductWithDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 상품 목록 로드
+  useEffect(() => {
+    async function loadProducts() {
+      setIsLoading(true);
+      try {
+        const result = await getProducts({
+          page: 1,
+          pageSize: 12,
+          categoryId: selectedCategory === "popular" ? undefined : selectedCategory,
+          sortBy: selectedCategory === "popular" ? "view_count" : "created_at",
+          sortOrder: "desc",
+        });
+
+        if (result.success && result.data) {
+          setProducts(result.data.data);
+        }
+      } catch (error) {
+        console.error("Failed to load products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, [selectedCategory]);
 
   const handleSearch = (query: string) => {
-    console.log("검색어:", query);
-    // TODO: 검색 로직 구현
+    if (query.trim()) {
+      router.push(`/products?search=${encodeURIComponent(query)}`);
+    }
   };
 
-  const handleProductClick = (product: MockProduct) => {
-    console.log("상품 클릭:", product);
-    // TODO: 상품 상세 페이지로 이동
+  const handleProductClick = (product: ProductWithDetails | MockProduct) => {
+    const id = "user_id" in product ? product.id : product.id;
+    router.push(`/products/${id}`);
   };
 
-  const handleLike = (productId: number) => {
+  const handleLike = (productId: string | number) => {
     console.log("좋아요:", productId);
-    // TODO: 좋아요 로직 구현
+    // TODO: 찜하기 API 연동
   };
 
   return (
@@ -123,11 +91,30 @@ export default function Home() {
         </div>
 
         {/* 상품 카드 그리드 */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} onClick={handleProductClick} onLike={handleLike} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">상품을 불러오는 중...</p>
+            </div>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-gray-500 text-lg">등록된 상품이 없습니다.</p>
+            <p className="text-gray-400 text-sm mt-2">첫 번째 상품을 등록해보세요!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={handleProductClick}
+                onLike={handleLike}
+              />
+            ))}
+          </div>
+        )}
 
         {/* 더보기 버튼 */}
         <div className="flex justify-center mt-8">

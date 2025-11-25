@@ -145,12 +145,13 @@ export default function ProductsPage() {
     // TODO: 카테고리별 필터링 로직 구현
   };
 
-  const handleProductClick = (product: MockProduct) => {
+  const handleProductClick = (product: ProductWithDetails | MockProduct) => {
+    const id = "user_id" in product ? product.id : product.id;
     console.log("상품 클릭:", product);
     // TODO: 상품 상세 페이지로 이동
   };
 
-  const handleLike = (productId: number) => {
+  const handleLike = (productId: string | number) => {
     console.log("좋아요:", productId);
     // TODO: 좋아요 로직 구현
   };

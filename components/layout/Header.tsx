@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, LogOut, ChevronDown } from "lucide-react";
+import { User as UserIcon, LogOut, ChevronDown, Plus } from "lucide-react";
 import { signOut } from "@/lib/api/auth/authApi";
+import * as Avatar from "@radix-ui/react-avatar";
 
 interface HeaderProps {
   user: User | null;
@@ -49,19 +50,33 @@ export default function Header({ user, userData }: HeaderProps) {
             <span className="text-2xl font-bold text-primary">&#127919; 픽템</span>
           </button>
 
-          {user ? (
-            <div className="relative" ref={menuRef}>
+          <div className="flex items-center gap-3">
+            {user && (
+              <button
+                onClick={() => router.push("/products/new")}
+                className="flex items-center gap-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">상품 등록</span>
+              </button>
+            )}
+
+            {user ? (
+              <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                {userData?.photo_url ? (
-                  <img src={userData.photo_url} alt="Profile" className="w-8 h-8 rounded-full" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-white" />
-                  </div>
-                )}
+                <Avatar.Root className="w-8 h-8">
+                  <Avatar.Image
+                    src={userData?.photo_url || undefined}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                  <Avatar.Fallback className="w-full h-full text-white rounded-full bg-primary flex items-center justify-center">
+                    {userData?.display_name ? userData?.display_name[0] : <UserIcon className="w-5 h-5 text-white" />}
+                  </Avatar.Fallback>
+                </Avatar.Root>
                 <span className="text-sm font-medium hidden sm:block">{userData?.display_name || "사용자"}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
@@ -87,15 +102,16 @@ export default function Header({ user, userData }: HeaderProps) {
                   </button>
                 </div>
               )}
-            </div>
-          ) : (
-            <button
-              onClick={() => router.push("/login")}
-              className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
-            >
-              로그인
-            </button>
-          )}
+              </div>
+            ) : (
+              <button
+                onClick={() => router.push("/login")}
+                className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+              >
+                로그인
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </header>
