@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { X, ImagePlus } from "lucide-react";
 import { getCategories } from "@/lib/api/products/productsApi";
 
@@ -16,20 +17,26 @@ export default function ProductForm({
   submitButtonText = "등록하기",
 }: ProductFormProps) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [formData, setFormData] = useState<ProductFormData>(
-    initialData || {
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ProductFormData>({
+    defaultValues: initialData || {
       userId: "",
       title: "",
       description: "",
       price: 0,
       categoryId: "",
       location: "배곧동",
-    }
-  );
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+    },
+  });
+
+  const descriptionLength = watch("description")?.length || 0;
 
   // 카테고리 목록 로드
   useEffect(() => {
@@ -41,25 +48,6 @@ export default function ProductForm({
     }
     loadCategories();
   }, []);
-
-  // 입력 값 변경 처리
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "price" ? parseInt(value) || 0 : value,
-    }));
-    // 에러 메시지 제거
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
 
   // 이미지 URL 추가
   const handleAddImage = () => {
@@ -74,66 +62,23 @@ export default function ProductForm({
     setImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // 유효성 검증
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.title.trim()) {
-      newErrors.title = "제목을 입력해주세요";
-    } else if (formData.title.length < 2) {
-      newErrors.title = "제목은 2자 이상 입력해주세요";
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = "상품 설명을 입력해주세요";
-    } else if (formData.description.length < 10) {
-      newErrors.description = "상품 설명은 10자 이상 입력해주세요";
-    }
-
-    if (formData.price <= 0) {
-      newErrors.price = "가격을 입력해주세요";
-    }
-
-    if (!formData.categoryId) {
-      newErrors.categoryId = "카테고리를 선택해주세요";
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = "거래 희망 장소를 입력해주세요";
-    }
-
-    if (imageUrls.length === 0) {
-      newErrors.images = "최소 1개의 이미지를 추가해주세요";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   // 폼 제출
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await onSubmit(formData, imageUrls);
-    } catch (error) {
-      console.error("Form submission error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const onFormSubmit = async (data: ProductFormData) => {
+    const finalImageUrls = imageUrls.length > 0 ? imageUrls : ["/no-image.svg"];
+    await onSubmit(data, finalImageUrls);
   };
+
+  const inputClassName = (hasError: boolean) =>
+    `w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+      hasError ? "border-red-500" : "border-gray-300"
+    }`;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       {/* 이미지 업로드 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          상품 이미지 <span className="text-red-500">*</span>
+          상품 이미지 <span className="text-gray-400 text-xs">(선택)</span>
           <span className="text-gray-500 text-xs ml-2">({imageUrls.length}/10)</span>
         </label>
 
@@ -184,7 +129,6 @@ export default function ProductForm({
             추가
           </button>
         </div>
-        {errors.images && <p className="mt-1 text-sm text-red-500">{errors.images}</p>}
         <p className="mt-1 text-xs text-gray-500">
           * 임시로 이미지 URL을 직접 입력합니다. Storage 설정 후 파일 업로드 기능이 추가될
           예정입니다.
@@ -199,16 +143,15 @@ export default function ProductForm({
         <input
           type="text"
           id="title"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
           placeholder="상품 제목을 입력하세요"
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-            errors.title ? "border-red-500" : "border-gray-300"
-          }`}
+          className={inputClassName(!!errors.title)}
           maxLength={100}
+          {...register("title", {
+            required: "제목을 입력해주세요",
+            minLength: { value: 2, message: "제목은 2자 이상 입력해주세요" },
+          })}
         />
-        {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
+        {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title.message}</p>}
       </div>
 
       {/* 카테고리 */}
@@ -218,12 +161,8 @@ export default function ProductForm({
         </label>
         <select
           id="categoryId"
-          name="categoryId"
-          value={formData.categoryId}
-          onChange={handleChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-            errors.categoryId ? "border-red-500" : "border-gray-300"
-          }`}
+          className={inputClassName(!!errors.categoryId)}
+          {...register("categoryId", { required: "카테고리를 선택해주세요" })}
         >
           <option value="">카테고리를 선택하세요</option>
           {categories.map((category) => (
@@ -232,7 +171,9 @@ export default function ProductForm({
             </option>
           ))}
         </select>
-        {errors.categoryId && <p className="mt-1 text-sm text-red-500">{errors.categoryId}</p>}
+        {errors.categoryId && (
+          <p className="mt-1 text-sm text-red-500">{errors.categoryId.message}</p>
+        )}
       </div>
 
       {/* 가격 */}
@@ -244,19 +185,19 @@ export default function ProductForm({
           <input
             type="number"
             id="price"
-            name="price"
-            value={formData.price || ""}
-            onChange={handleChange}
             placeholder="0"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-              errors.price ? "border-red-500" : "border-gray-300"
-            }`}
+            className={inputClassName(!!errors.price)}
             min="0"
             step="1000"
+            {...register("price", {
+              required: "가격을 입력해주세요",
+              valueAsNumber: true,
+              min: { value: 1, message: "가격을 입력해주세요" },
+            })}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">원</span>
         </div>
-        {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
+        {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>}
       </div>
 
       {/* 설명 */}
@@ -266,19 +207,20 @@ export default function ProductForm({
         </label>
         <textarea
           id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
           placeholder="상품에 대한 자세한 설명을 입력하세요"
           rows={8}
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none ${
-            errors.description ? "border-red-500" : "border-gray-300"
-          }`}
+          className={`${inputClassName(!!errors.description)} resize-none`}
           maxLength={2000}
+          {...register("description", {
+            required: "상품 설명을 입력해주세요",
+            minLength: { value: 10, message: "상품 설명은 10자 이상 입력해주세요" },
+          })}
         />
         <div className="flex justify-between items-center mt-1">
-          {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
-          <p className="text-xs text-gray-500 ml-auto">{formData.description.length}/2000</p>
+          {errors.description && (
+            <p className="text-sm text-red-500">{errors.description.message}</p>
+          )}
+          <p className="text-xs text-gray-500 ml-auto">{descriptionLength}/2000</p>
         </div>
       </div>
 
@@ -290,16 +232,12 @@ export default function ProductForm({
         <input
           type="text"
           id="location"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
           placeholder="예: 강남역, 홍대입구역"
-          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-            errors.location ? "border-red-500" : "border-gray-300"
-          }`}
+          className={inputClassName(!!errors.location)}
           maxLength={50}
+          {...register("location", { required: "거래 희망 장소를 입력해주세요" })}
         />
-        {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
+        {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location.message}</p>}
       </div>
 
       {/* 제출 버튼 */}
