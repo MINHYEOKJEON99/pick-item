@@ -8,6 +8,53 @@ import { createClient } from "@/lib/supabase/client";
 const supabase = createClient();
 
 // ============================================
+// 헬퍼 함수
+// ============================================
+
+/**
+ * 상품 목록에 wishlist 정보 추가
+ */
+async function addWishlistInfo(
+  products: any[],
+  currentUserId?: string
+): Promise<ProductWithDetails[]> {
+  if (products.length === 0) return [];
+
+  const productIds = products.map((p) => p.id);
+
+  // 각 상품의 찜 개수 가져오기
+  const { data: wishlistCounts } = await supabase
+    .from("wishlists")
+    .select("product_id")
+    .in("product_id", productIds);
+
+  // 찜 개수 계산
+  const countMap: Record<string, number> = {};
+  wishlistCounts?.forEach((w) => {
+    countMap[w.product_id] = (countMap[w.product_id] || 0) + 1;
+  });
+
+  // 현재 사용자의 찜 상태 확인
+  let userWishlistSet = new Set<string>();
+  if (currentUserId) {
+    const { data: userWishlists } = await supabase
+      .from("wishlists")
+      .select("product_id")
+      .eq("user_id", currentUserId)
+      .in("product_id", productIds);
+
+    userWishlists?.forEach((w) => userWishlistSet.add(w.product_id));
+  }
+
+  // 상품 데이터에 wishlist 정보 추가
+  return products.map((product) => ({
+    ...product,
+    wishlist_count: countMap[product.id] || 0,
+    is_wishlist: userWishlistSet.has(product.id),
+  }));
+}
+
+// ============================================
 // 상품 조회 (Read)
 // ============================================
 
@@ -21,6 +68,7 @@ export async function getProducts(params?: {
   status?: "available" | "reserved" | "sold";
   sortBy?: "created_at" | "price" | "view_count";
   sortOrder?: "asc" | "desc";
+  currentUserId?: string;
 }): Promise<ApiResponse<PaginatedResponse<ProductWithDetails>>> {
   try {
     const page = params?.page || 1;
@@ -60,11 +108,14 @@ export async function getProducts(params?: {
       return { data: null, error: error.message, success: false };
     }
 
+    // wishlist 정보 추가
+    const productsWithWishlist = await addWishlistInfo(data || [], params?.currentUserId);
+
     const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
     return {
       data: {
-        data: data || [],
+        data: productsWithWishlist,
         total: count || 0,
         page,
         pageSize,
@@ -87,7 +138,8 @@ export async function getProducts(params?: {
  * 상품 상세 조회
  */
 export async function getProductById(
-  productId: string
+  productId: string,
+  currentUserId?: string
 ): Promise<ApiResponse<ProductWithDetails>> {
   try {
     const { data, error } = await supabase
@@ -108,10 +160,13 @@ export async function getProductById(
       return { data: null, error: error.message, success: false };
     }
 
+    // wishlist 정보 추가
+    const [productWithWishlist] = await addWishlistInfo([data], currentUserId);
+
     // 조회수 증가
     await incrementViewCount(productId);
 
-    return { data, error: null, success: true };
+    return { data: productWithWishlist, error: null, success: true };
   } catch (error) {
     console.error("Error in getProductById:", error);
     return {
@@ -165,6 +220,7 @@ export async function searchProducts(
     page?: number;
     pageSize?: number;
     categoryId?: string;
+    currentUserId?: string;
   }
 ): Promise<ApiResponse<PaginatedResponse<ProductWithDetails>>> {
   try {
@@ -198,11 +254,14 @@ export async function searchProducts(
       return { data: null, error: error.message, success: false };
     }
 
+    // wishlist 정보 추가
+    const productsWithWishlist = await addWishlistInfo(data || [], params?.currentUserId);
+
     const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
     return {
       data: {
-        data: data || [],
+        data: productsWithWishlist,
         total: count || 0,
         page,
         pageSize,
@@ -273,11 +332,18 @@ export async function createProduct(
     }
 
     // 3. 사용자의 posts_count 증가
-    await supabase.rpc("increment", {
-      table_name: "profiles",
-      row_id: productData.userId,
-      column_name: "posts_count",
-    });
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("posts_count")
+      .eq("id", productData.userId)
+      .single();
+
+    if (profile) {
+      await supabase
+        .from("profiles")
+        .update({ posts_count: (profile.posts_count || 0) + 1 })
+        .eq("id", productData.userId);
+    }
 
     return { data: product, error: null, success: true };
   } catch (error) {
@@ -399,14 +465,19 @@ export async function deleteProduct(productId: string): Promise<ApiResponse<null
  */
 async function incrementViewCount(productId: string): Promise<void> {
   try {
-    const { error } = await supabase.rpc("increment", {
-      table_name: "products",
-      row_id: productId,
-      column_name: "view_count",
-    });
+    // 현재 조회수 가져오기
+    const { data: product } = await supabase
+      .from("products")
+      .select("view_count")
+      .eq("id", productId)
+      .single();
 
-    if (error) {
-      console.error("Error incrementing view count:", error);
+    if (product) {
+      // 조회수 +1 업데이트
+      await supabase
+        .from("products")
+        .update({ view_count: (product.view_count || 0) + 1 })
+        .eq("id", productId);
     }
   } catch (error) {
     console.error("Error in incrementViewCount:", error);

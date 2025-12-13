@@ -10,7 +10,8 @@
       "Bash(rm:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "WebFetch(domain:postcode.map.daum.net)"
+      "WebFetch(domain:postcode.map.daum.net)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

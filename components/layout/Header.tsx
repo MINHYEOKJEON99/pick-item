@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, LogOut, ChevronDown, Plus } from "lucide-react";
+import { User as UserIcon, LogOut, ChevronDown } from "lucide-react";
 import { signOut } from "@/lib/api/auth/authApi";
 import * as Avatar from "@radix-ui/react-avatar";
 
@@ -51,16 +51,6 @@ export default function Header({ user, userData }: HeaderProps) {
           </button>
 
           <div className="flex items-center gap-3">
-            {user && (
-              <button
-                onClick={() => router.push("/products/new")}
-                className="flex items-center gap-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">상품 등록</span>
-              </button>
-            )}
-
             {user ? (
               <div className="relative" ref={menuRef}>
               <button

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Heart, MapPin, Eye, MessageCircle, Share2 } from "lucide-react";
 import { getProductById } from "@/lib/api/products/productsApi";
+import { toggleWishlist } from "@/lib/api/wishlist/wishlistApi";
+import { createClient } from "@/lib/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import * as Avatar from "@radix-ui/react-avatar";
@@ -17,15 +19,29 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlist, setIsWishlist] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+
+  // 현재 사용자 가져오기
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id);
+    };
+    fetchUser();
+  }, []);
 
   // 상품 정보 로드
   useEffect(() => {
     async function loadProduct() {
       setIsLoading(true);
       try {
-        const result = await getProductById(productId);
+        const result = await getProductById(productId, currentUserId);
         if (result.success && result.data) {
           setProduct(result.data);
+          setIsWishlist(result.data.is_wishlist || false);
+          setWishlistCount(result.data.wishlist_count || 0);
         } else {
           alert("상품을 찾을 수 없습니다.");
           router.push("/");
@@ -40,12 +56,38 @@ export default function ProductDetailPage() {
     }
 
     loadProduct();
-  }, [productId, router]);
+  }, [productId, router, currentUserId]);
 
-  // 찜하기 토글
-  const handleWishlistToggle = () => {
-    setIsWishlist(!isWishlist);
-    // TODO: 찜하기 API 연동
+  // 찜하기 토글 (낙관적 업데이트)
+  const handleWishlistToggle = async () => {
+    if (!currentUserId) {
+      alert("로그인이 필요합니다.");
+      router.push("/login");
+      return;
+    }
+
+    // 낙관적 업데이트
+    const previousIsWishlist = isWishlist;
+    const previousCount = wishlistCount;
+    const newIsWishlist = !isWishlist;
+
+    setIsWishlist(newIsWishlist);
+    setWishlistCount((prev) => (newIsWishlist ? prev + 1 : prev - 1));
+
+    // API 호출
+    try {
+      const result = await toggleWishlist(currentUserId, productId);
+      if (!result.success) {
+        // 실패 시 롤백
+        setIsWishlist(previousIsWishlist);
+        setWishlistCount(previousCount);
+      }
+    } catch (error) {
+      console.error("찜하기 실패:", error);
+      // 에러 시 롤백
+      setIsWishlist(previousIsWishlist);
+      setWishlistCount(previousCount);
+    }
   };
 
   // 공유하기
@@ -213,8 +255,8 @@ export default function ProductDetailPage() {
                   <span>{product.view_count}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Heart className="w-4 h-4 fill-current" />
-                  <span>{product.wishlist_count || 0}</span>
+                  <Heart className={`w-4 h-4 ${isWishlist ? "fill-red-500 text-red-500" : ""}`} />
+                  <span>{wishlistCount}</span>
                 </div>
               </div>
 

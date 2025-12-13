@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import Header from "@/components/layout/Header";
+import FloatingActionButton from "@/components/layout/FloatingActionButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,8 @@ export default async function RootLayout({
           {/* 헤더 - 서버에서 가져온 사용자 정보 전달 */}
           <Header user={user} userData={userData} />
           {children}
+          {/* FAB - 로그인 시에만 표시 */}
+          <FloatingActionButton isLoggedIn={!!user} />
         </div>
       </body>
     </html>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, MapPin, ChevronDown } from "lucide-react";
 
 interface SearchBarProps {
   onSearch?: (query: string) => void;
   showLocationSelector?: boolean;
   showPopularTags?: boolean;
+  initialValue?: string;
 }
 
 const popularTags = [
@@ -23,8 +24,13 @@ const popularTags = [
   "배곧동",
 ];
 
-export default function SearchBar({ onSearch, showLocationSelector = true, showPopularTags = true }: SearchBarProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function SearchBar({ onSearch, showLocationSelector = true, showPopularTags = true, initialValue = "" }: SearchBarProps) {
+  const [searchQuery, setSearchQuery] = useState(initialValue);
+
+  // initialValue가 변경되면 searchQuery 업데이트
+  useEffect(() => {
+    setSearchQuery(initialValue);
+  }, [initialValue]);
 
   const handleSearch = () => {
     if (onSearch) {

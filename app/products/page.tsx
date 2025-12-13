@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import SearchBar from "@/components/products/SearchBar";
 import CategoryFilter from "@/components/products/CategoryFilter";
 import ProductCard, { MockProduct } from "@/components/products/ProductCard";
+import { searchProducts, getProducts } from "@/lib/api/products/productsApi";
+import { createClient } from "@/lib/supabase/client";
 
-// 임시 상품 데이터
+// 임시 상품 데이터 (API 실패 시 fallback)
 const mockProducts: MockProduct[] = [
   {
     id: 1,
@@ -130,30 +133,96 @@ const mockProducts: MockProduct[] = [
 ];
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [products, setProducts] = useState<(ProductWithDetails | MockProduct)[]>(mockProducts);
+  const [isLoading, setIsLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(mockProducts.length);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+
+  // URL에서 검색어 가져오기
+  const searchQuery = searchParams.get("search") || "";
+
+  // 현재 사용자 가져오기
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id);
+    };
+    fetchUser();
+  }, []);
+
+  // 검색어나 카테고리 변경 시 상품 목록 로드
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoading(true);
+      try {
+        if (searchQuery) {
+          // 검색어가 있으면 검색 API 호출
+          const result = await searchProducts(searchQuery, {
+            categoryId: selectedCategory,
+            currentUserId,
+          });
+          if (result.success && result.data) {
+            setProducts(result.data.data);
+            setTotalCount(result.data.total);
+          } else {
+            // API 실패 시 mockProducts에서 필터링
+            const filtered = mockProducts.filter((p) => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+            setProducts(filtered);
+            setTotalCount(filtered.length);
+          }
+        } else {
+          // 검색어가 없으면 전체 상품 목록 조회
+          const result = await getProducts({
+            categoryId: selectedCategory,
+            currentUserId,
+          });
+          if (result.success && result.data) {
+            setProducts(result.data.data);
+            setTotalCount(result.data.total);
+          } else {
+            setProducts(mockProducts);
+            setTotalCount(mockProducts.length);
+          }
+        }
+      } catch (error) {
+        console.error("상품 로드 실패:", error);
+        setProducts(mockProducts);
+        setTotalCount(mockProducts.length);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [searchQuery, selectedCategory, currentUserId]);
 
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    console.log("검색어:", query);
-    // TODO: 실제 검색 로직 구현
+    // URL 파라미터 업데이트
+    const params = new URLSearchParams(searchParams.toString());
+    if (query) {
+      params.set("search", query);
+    } else {
+      params.delete("search");
+    }
+    router.push(`/products?${params.toString()}`);
   };
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    console.log("선택된 카테고리:", categoryId);
-    // TODO: 카테고리별 필터링 로직 구현
   };
 
   const handleProductClick = (product: ProductWithDetails | MockProduct) => {
     const id = "user_id" in product ? product.id : product.id;
-    console.log("상품 클릭:", product);
-    // TODO: 상품 상세 페이지로 이동
+    router.push(`/products/${id}`);
   };
 
-  const handleLike = (productId: string | number) => {
-    console.log("좋아요:", productId);
-    // TODO: 좋아요 로직 구현
+  const handleLike = (productId: string | number, isLiked: boolean) => {
+    console.log("찜하기:", productId, isLiked ? "추가" : "제거");
   };
 
   return (
@@ -161,7 +230,7 @@ export default function ProductsPage() {
       {/* 검색 영역 */}
       <div className="bg-white border-b border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SearchBar onSearch={handleSearch} showPopularTags={false} />
+          <SearchBar onSearch={handleSearch} showPopularTags={false} initialValue={searchQuery} />
         </div>
       </div>
 
@@ -171,10 +240,7 @@ export default function ProductsPage() {
           {/* 왼쪽 카테고리 필터 */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-6 bg-white rounded-lg shadow-sm p-4">
-              <CategoryFilter
-                selectedCategory={selectedCategory}
-                onCategoryChange={handleCategoryChange}
-              />
+              <CategoryFilter selectedCategory={selectedCategory} onCategoryChange={handleCategoryChange} />
             </div>
           </aside>
 
@@ -201,11 +267,17 @@ export default function ProductsPage() {
               </select>
             </div>
 
+            {/* 검색 결과 표시 */}
+            {searchQuery && (
+              <div className="mb-4 pt-3 rounded-lg">
+                <p className="text-sm text-[#00A1FF]">&quot;{searchQuery}&quot; 검색 결과</p>
+              </div>
+            )}
+
             {/* 상품 개수 및 정렬 */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-gray-600">
-                총 <span className="font-semibold text-gray-900">{mockProducts.length}</span>개의
-                상품
+                총 <span className="font-semibold text-gray-900">{totalCount}</span>개의 상품
               </p>
               <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                 <option value="recent">최신순</option>
@@ -216,23 +288,37 @@ export default function ProductsPage() {
             </div>
 
             {/* 상품 그리드 */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {mockProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onClick={handleProductClick}
-                  onLike={handleLike}
-                />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {products.map((product) => (
+                  <ProductCard
+                    key={"user_id" in product ? product.id : product.id}
+                    product={product}
+                    onClick={handleProductClick}
+                    onLike={handleLike}
+                    currentUserId={currentUserId}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+                <p className="text-lg font-medium mb-2">검색 결과가 없습니다</p>
+                <p className="text-sm">다른 검색어로 다시 시도해보세요</p>
+              </div>
+            )}
 
             {/* 더보기 버튼 */}
-            <div className="flex justify-center mt-8">
-              <button className="px-8 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-colors">
-                더 많은 상품 보기
-              </button>
-            </div>
+            {!isLoading && products.length > 0 && (
+              <div className="flex justify-center mt-8">
+                <button className="px-8 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover transition-colors">
+                  더 많은 상품 보기
+                </button>
+              </div>
+            )}
           </main>
         </div>
       </div>
