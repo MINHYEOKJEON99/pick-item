@@ -23,12 +23,7 @@ const popularTags = [
   "배곧동",
 ];
 
-export default function SearchBar({
-  onSearch,
-  showLocationSelector = true,
-  showPopularTags = true,
-}: SearchBarProps) {
-  const [selectedLocation, setSelectedLocation] = useState("배곧동");
+export default function SearchBar({ onSearch, showLocationSelector = true, showPopularTags = true }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = () => {
@@ -48,15 +43,6 @@ export default function SearchBar({
       {/* 검색창 섹션 */}
       <div className="flex justify-center mb-6">
         <div className="flex gap-2 w-full max-w-2xl">
-          {/* 위치 선택 드롭다운 */}
-          {showLocationSelector && (
-            <button className="flex items-center gap-2 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
-              <MapPin className="w-4 h-4" />
-              <span>{selectedLocation}</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-          )}
-
           {/* 검색 입력창 */}
           <div className="flex-1 relative">
             <input
@@ -85,9 +71,7 @@ export default function SearchBar({
               key={index}
               onClick={() => setSearchQuery(tag === "인기 검색어" ? "" : tag)}
               className={`px-3 py-1 text-sm rounded-full cursor-pointer transition-colors ${
-                index === 0
-                  ? "bg-gray-800 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                index === 0 ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               {tag}

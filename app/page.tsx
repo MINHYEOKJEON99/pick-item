@@ -63,9 +63,9 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 타이틀 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl flex justify-center items-center font-bold text-gray-900 mb-2">
             <MapPin className="inline-block w-8 h-8 mr-2" />
-            배곧동에서 중고 거래하기
+            픽템에서 중고 거래하기
           </h1>
         </div>
 
@@ -106,12 +106,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={handleProductClick}
-                onLike={handleLike}
-              />
+              <ProductCard key={product.id} product={product} onClick={handleProductClick} onLike={handleLike} />
             ))}
           </div>
         )}
