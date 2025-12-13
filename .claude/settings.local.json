@@ -9,7 +9,8 @@
       "Bash(npm uninstall:*)",
       "Bash(rm:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:postcode.map.daum.net)"
     ],
     "deny": [],
     "ask": []

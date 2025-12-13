@@ -38,18 +38,14 @@ export default function ProductCard({ product, onClick, onLike }: ProductCardPro
   const image = isRealProduct
     ? (product as ProductWithDetails).images?.[0]?.image_url || "/placeholder.png"
     : (product as MockProduct).image;
-  const location = isRealProduct
-    ? (product as ProductWithDetails).location
-    : (product as MockProduct).location;
+  const location = isRealProduct ? (product as ProductWithDetails).location : (product as MockProduct).location;
   const timeAgo = isRealProduct
     ? formatDistanceToNow(new Date((product as ProductWithDetails).created_at), {
         addSuffix: true,
         locale: ko,
       })
     : (product as MockProduct).timeAgo;
-  const likes = isRealProduct
-    ? (product as ProductWithDetails).wishlist_count || 0
-    : (product as MockProduct).likes;
+  const likes = isRealProduct ? (product as ProductWithDetails).wishlist_count || 0 : (product as MockProduct).likes;
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -78,9 +74,7 @@ export default function ProductCard({ product, onClick, onLike }: ProductCardPro
           onClick={handleLikeClick}
           className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
         >
-          <Heart
-            className={`w-4 h-4 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-600"}`}
-          />
+          <Heart className={`w-4 h-4 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
         </button>
       </div>
 
@@ -92,7 +86,7 @@ export default function ProductCard({ product, onClick, onLike }: ProductCardPro
         {/* 판매자 정보 및 좋아요 */}
         <div className="flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center gap-1">
-            <span>{location}</span>
+            <span className="max-w-20">{location}</span>
             <span>•</span>
             <span>{timeAgo}</span>
           </div>

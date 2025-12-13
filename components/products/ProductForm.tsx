@@ -2,8 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { X, ImagePlus } from "lucide-react";
+import { X, ImagePlus, MapPin } from "lucide-react";
 import { getCategories } from "@/lib/api/products/productsApi";
+
+// 다음 우편번호 서비스 타입 선언
+declare global {
+  interface Window {
+    daum: {
+      Postcode: new (options: {
+        oncomplete: (data: DaumPostcodeData) => void;
+      }) => { open: () => void };
+    };
+  }
+}
+
+interface DaumPostcodeData {
+  zonecode: string;
+  address: string;
+  roadAddress: string;
+  jibunAddress: string;
+  buildingName: string;
+  userSelectedType: "R" | "J";
+}
 
 interface ProductFormProps {
   initialData?: ProductFormData;
@@ -19,11 +39,13 @@ export default function ProductForm({
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [displayPrice, setDisplayPrice] = useState("");
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({
     defaultValues: initialData || {
@@ -32,11 +54,34 @@ export default function ProductForm({
       description: "",
       price: 0,
       categoryId: "",
-      location: "배곧동",
+      location: "",
     },
   });
 
   const descriptionLength = watch("description")?.length || 0;
+
+  // 가격 포맷팅 (세자리 콤마)
+  const formatPrice = (value: string) => {
+    const numericValue = value.replace(/[^0-9]/g, "");
+    if (!numericValue) return "";
+    return Number(numericValue).toLocaleString("ko-KR");
+  };
+
+  // 가격 입력 핸들러
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/[^0-9]/g, "");
+    const numericValue = rawValue ? Number(rawValue) : 0;
+
+    setDisplayPrice(formatPrice(rawValue));
+    setValue("price", numericValue, { shouldValidate: true });
+  };
+
+  // 초기 가격 설정
+  useEffect(() => {
+    if (initialData?.price) {
+      setDisplayPrice(formatPrice(String(initialData.price)));
+    }
+  }, [initialData]);
 
   // 카테고리 목록 로드
   useEffect(() => {
@@ -48,6 +93,37 @@ export default function ProductForm({
     }
     loadCategories();
   }, []);
+
+  // 다음 우편번호 스크립트 로드
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
+  // 우편번호 검색 팝업 열기
+  const handleOpenPostcode = () => {
+    if (!window.daum) return;
+
+    new window.daum.Postcode({
+      oncomplete: (data: DaumPostcodeData) => {
+        // 도로명 주소 우선, 없으면 지번 주소 사용
+        let fullAddress = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
+
+        // 건물명이 있으면 추가
+        if (data.buildingName) {
+          fullAddress += ` (${data.buildingName})`;
+        }
+
+        setValue("location", fullAddress, { shouldValidate: true });
+      },
+    }).open();
+  };
 
   // 이미지 URL 추가
   const handleAddImage = () => {
@@ -183,20 +259,17 @@ export default function ProductForm({
         </label>
         <div className="relative">
           <input
-            type="number"
+            type="text"
             id="price"
+            inputMode="numeric"
             placeholder="0"
             className={inputClassName(!!errors.price)}
-            min="0"
-            step="1000"
-            {...register("price", {
-              required: "가격을 입력해주세요",
-              valueAsNumber: true,
-              min: { value: 1, message: "가격을 입력해주세요" },
-            })}
+            value={displayPrice}
+            onChange={handlePriceChange}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">원</span>
         </div>
+        <input type="hidden" {...register("price", { required: "가격을 입력해주세요", min: { value: 1, message: "가격을 입력해주세요" } })} />
         {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>}
       </div>
 
@@ -229,14 +302,25 @@ export default function ProductForm({
         <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
           거래 희망 장소 <span className="text-red-500">*</span>
         </label>
-        <input
-          type="text"
-          id="location"
-          placeholder="예: 강남역, 홍대입구역"
-          className={inputClassName(!!errors.location)}
-          maxLength={50}
-          {...register("location", { required: "거래 희망 장소를 입력해주세요" })}
-        />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            id="location"
+            placeholder="주소 검색 버튼을 클릭하세요"
+            className={`${inputClassName(!!errors.location)} cursor-pointer`}
+            readOnly
+            onClick={handleOpenPostcode}
+            {...register("location", { required: "거래 희망 장소를 입력해주세요" })}
+          />
+          <button
+            type="button"
+            onClick={handleOpenPostcode}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 whitespace-nowrap"
+          >
+            <MapPin className="w-4 h-4" />
+            주소 검색
+          </button>
+        </div>
         {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location.message}</p>}
       </div>
 
