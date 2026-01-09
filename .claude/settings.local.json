@@ -6,7 +6,12 @@
       "Bash(npx kill-port:*)",
       "Bash(npm run build:*)",
       "Bash(mkdir:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:postcode.map.daum.net)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
